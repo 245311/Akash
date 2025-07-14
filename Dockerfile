@@ -1,7 +1,7 @@
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 80
+EXPOSE 8000
 
 # Build stage: Uses the .NET SDK image to build the application
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build

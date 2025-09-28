@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+
+    environment {
+        SONAR_HOME = tool "sonar"
+    }
+
+    stages {
+        stage("Checkout Code") {
+            steps {
+                git url: 'https://github.com/245311/Akash.git', branch: 'master'
+            }
+        }
+
+        stage("SonarQube Scan") {
+            steps {
+                withSonarQubeEnv("sonar") {
+                    sh "${SONAR_HOME}/bin/sonar-scanner -Dsonar.projectName=Akash -Dsonar.projectKey=Akash"
+                }
+            }
+        }
+
+        stage("OWASP Dependency Check") {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./', odcInstallation: 'dc'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+
+        stage("Sonar Quality Gate Scan") {
+            steps {
+                timeout(time: 2, unit: "MINUTES") {
+                    waitForQualityGate abortPipeline: false
+                }
+            }
+        }
+
+        stage('Trivy file system scan') {
+            steps {
+                sh "trivy fs --format table -o trivy-fs-report.html ."
+            }
+        }
+
+        stage('Docker Build and Deploy') {
+            steps {
+                sh '''
+                    echo "🔧 Building Docker image..."
+                    docker build -t myapp-image .
+
+                    echo "🚀 Deploying container..."
+                    docker run -d --name myapp-container -p 8080:80 myapp-image
+                '''
+            }
+        }
+    }
+}
